@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Spinner } from "@/components/ui/Spinner";
-import { WorkoutTaskTable } from "@/components/shared/WorkoutTaskTable";
+import { WorkoutTaskTable } from "@/components/shared/workoutTaskTable";
 import {
   getWorkoutTasks,
   createWorkoutTask,
