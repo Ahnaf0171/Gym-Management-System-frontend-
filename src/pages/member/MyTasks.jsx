@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Spinner } from "@/components/ui/Spinner";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { WorkoutTaskTable } from "@/components/shared/WorkoutTaskTable";
+import { WorkoutTaskTable } from "@/components/shared/workoutTaskTable";
 import { getWorkoutTasks } from "@/services/workoutTaskService";
 
 export default function MyTasks() {
