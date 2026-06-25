@@ -4,7 +4,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { getPublicTrainers } from "@/services/userService";
 
 export function CoachesSection() {
-  const [branches, setBranches] = useState();
+  const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,7 +29,10 @@ export function CoachesSection() {
 
         if (mapped.length > 0) setBranches(mapped);
       })
-      .catch((err) => console.log("Error:", err))
+      .catch((err) => {
+        console.log("Error:", err);
+        setBranches([]);
+      })
       .finally(() => setLoading(false));
   }, []);
 
