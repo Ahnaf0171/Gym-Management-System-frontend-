@@ -18,7 +18,7 @@ export function PlanCard({
 }) {
   return (
     <div
-      className={`relative flex flex-col rounded-2xl p-5 transition-all
+      className={`relative flex flex-col rounded-2xl p-2 md:p-5 transition-all w-75 md:w-55
       ${
         featured
           ? "border-2 border-blue-500 bg-white/5"
