@@ -57,10 +57,13 @@ export function CoachesSection() {
             <Spinner />
           </div>
         ) : (
-          <div className="flex flex-col gap-14">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-14">
             {branches.map((branch) => (
-              <div key={branch.id}>
-                <div className="flex items-center gap-3 mb-6">
+              <div
+                key={branch.id}
+                className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6"
+              >
+                <div className="flex items-center justify-center gap-3 mb-6">
                   <div
                     className="w-1 h-6 rounded-full"
                     style={{ backgroundColor: "var(--color-primary)" }}

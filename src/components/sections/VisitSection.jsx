@@ -59,7 +59,7 @@ export function VisitSection() {
           </p>
         )}
 
-        <div className="flex flex-col gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {branches.map((branch) => (
             <div
               key={branch.id}
