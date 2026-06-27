@@ -29,6 +29,7 @@ import Coaches from "@/pages/public/Coaches";
 import Visit from "@/pages/public/Visit";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import TrainerUsers from "@/pages/trainer/TrainerUsers";
+import ScrollToTop from "./components/shared/ScrollToTop";
 
 function AppRoutes() {
   const { user } = useAuth();
@@ -193,6 +194,7 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AuthProvider>
         <AppRoutes />
       </AuthProvider>

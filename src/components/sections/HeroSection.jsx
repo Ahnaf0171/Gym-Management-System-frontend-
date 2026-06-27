@@ -24,7 +24,7 @@ export default function HeroSection() {
           Push Your Limits
         </h1>
         <Link
-          to="/register"
+          to="/login"
           className="inline-flex items-center justify-center px-10 py-4 bg-blue-600 text-white text-base font-semibold uppercase tracking-widest rounded-md hover:bg-blue-700 transition-all duration-150 active:scale-95"
         >
           Get Started

@@ -1,4 +1,5 @@
 import { Check, X } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const badgeStyles = {
   save: "bg-green-500/10 text-green-400 border border-green-500/20",
@@ -60,16 +61,17 @@ export function PlanCard({
         ))}
       </ul>
 
-      <button
-        className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all
-        ${
-          featured
-            ? "bg-blue-500 hover:bg-blue-400 text-white"
-            : "border border-white/10 text-white/60 hover:bg-white/5 hover:text-white"
-        }`}
+      <Link
+        to="/visit"
+        className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all text-center block
+  ${
+    featured
+      ? "bg-blue-500 hover:bg-blue-400 text-white"
+      : "border border-white/10 text-white/60 hover:bg-white/5 hover:text-white"
+  }`}
       >
-        Get started
-      </button>
+        Visit Us
+      </Link>
     </div>
   );
 }
