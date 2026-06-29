@@ -11,8 +11,12 @@ const desktopLinkClass = ({ isActive }) =>
   ${isActive ? "text-[var(--color-primary)]" : "text-[var(--color-text-primary)] hover:text-[var(--color-primary)]"}`;
 
 const mobileLinkClass = ({ isActive }) =>
-  `block text-sm font-semibold tracking-wide uppercase px-4 py-3 rounded-lg border-l-2 transition-all duration-150 cursor-pointer
-  ${isActive ? "text-[var(--color-primary)] bg-[var(--color-primary-light)] border-[var(--color-primary)]" : "text-[var(--color-text-primary)] border-transparent"}`;
+  `block text-sm font-semibold tracking-wide uppercase px-4 py-3 rounded-lg transition-all duration-150 cursor-pointer
+  ${
+    isActive
+      ? "text-[var(--color-primary)] bg-[var(--color-primary-light)]"
+      : "text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)]"
+  }`;
 
 const HamburgerButton = ({
   onClick,
@@ -87,20 +91,20 @@ export function Navbar({ onMenuClick }) {
 
           {user ? (
             <div className="flex items-center gap-2">
-              {/* Mobile: Sidebar button */}
+              {/* Sidebar button — relative z-10 so it stays above the mobile dropdown overlay */}
               <button
                 onClick={onMenuClick}
-                className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide bg-[var(--color-surface-2)] text-[var(--color-text-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors duration-150 cursor-pointer"
+                className="md:hidden relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide bg-[var(--color-surface-2)] text-[var(--color-text-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors duration-150 cursor-pointer"
               >
                 ☰ Sidebar
               </button>
 
-              {/* Mobile: Navbar menu toggle */}
+              {/* Hamburger — mobile navbar dropdown toggle */}
               <HamburgerButton
                 onClick={() => setMobileOpen((p) => !p)}
                 isOpen={mobileOpen}
                 ariaLabel={mobileOpen ? "Close menu" : "Open menu"}
-                className="md:hidden"
+                className="md:hidden relative z-10"
               />
 
               {/* Desktop: role badge */}
@@ -164,9 +168,9 @@ export function Navbar({ onMenuClick }) {
         </div>
       </header>
 
-      {/* Mobile dropdown — both logged in and logged out */}
+      {/* Mobile dropdown — z-30 so sidebar button (z-10 inside z-50 header) stays on top */}
       <div
-        className={`lg:hidden fixed top-[var(--navbar-height)] left-0 right-0 bottom-0 z-40 bg-[var(--color-surface-1)] overflow-y-auto px-[var(--container-pad)] py-6 transition-transform duration-300 ease-in-out ${mobileOpen ? "translate-x-0" : "translate-x-full"}`}
+        className={`lg:hidden fixed top-[var(--navbar-height)] left-0 right-0 bottom-0 z-30 bg-[var(--color-surface-1)] overflow-y-auto px-[var(--container-pad)] py-6 transition-transform duration-300 ease-in-out ${mobileOpen ? "translate-x-0" : "translate-x-full"}`}
       >
         {/* Nav links */}
         <nav className="flex flex-col gap-1 mb-6">

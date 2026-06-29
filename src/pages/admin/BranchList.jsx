@@ -5,17 +5,39 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Spinner } from "@/components/ui/Spinner";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { getBranches, createBranch } from "@/services/branchService";
-import { Building2 } from "lucide-react";
+import {
+  getBranches,
+  createBranch,
+  updateBranch,
+  deleteBranch,
+} from "@/services/branchService";
+import { Building2, Pencil, Trash2, MapPin } from "lucide-react";
+
+const EMPTY_FORM = { name: "", location: "" };
 
 export default function BranchList() {
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isOpen, setIsOpen] = useState(false);
-  const [formData, setFormData] = useState({ name: "", location: "" });
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
 
+  // Create modal
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState(EMPTY_FORM);
+  const [createError, setCreateError] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  // Edit modal
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState(EMPTY_FORM);
+  const [editTarget, setEditTarget] = useState(null); // branch being edited
+  const [editError, setEditError] = useState("");
+  const [editing, setEditing] = useState(false);
+
+  // Delete modal
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  /* ─── Fetch ─── */
   const fetchBranches = useCallback(async () => {
     setLoading(true);
     try {
@@ -32,46 +54,114 @@ export default function BranchList() {
     fetchBranches();
   }, [fetchBranches]);
 
-  const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  /* ─── Create handlers ─── */
+  const openCreate = () => {
+    setCreateForm(EMPTY_FORM);
+    setCreateError("");
+    setCreateOpen(true);
   };
 
-  const handleSubmit = async (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault();
-    setError("");
-    setSubmitting(true);
+    setCreateError("");
+    setCreating(true);
     try {
-      await createBranch(formData);
-      setIsOpen(false);
-      setFormData({ name: "", location: "" });
+      await createBranch(createForm);
+      setCreateOpen(false);
       fetchBranches();
     } catch (err) {
-      setError(
+      setCreateError(
         err.response?.data?.message ||
           err.response?.data?.name?.[0] ||
           "Something went wrong",
       );
     } finally {
-      setSubmitting(false);
+      setCreating(false);
     }
   };
 
+  /* ─── Edit handlers ─── */
+  const openEdit = (branch) => {
+    setEditTarget(branch);
+    setEditForm({ name: branch.name, location: branch.location });
+    setEditError("");
+    setEditOpen(true);
+  };
+
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    setEditError("");
+    setEditing(true);
+    try {
+      await updateBranch(editTarget.id, editForm);
+      setEditOpen(false);
+      fetchBranches();
+    } catch (err) {
+      setEditError(
+        err.response?.data?.message ||
+          err.response?.data?.name?.[0] ||
+          "Something went wrong",
+      );
+    } finally {
+      setEditing(false);
+    }
+  };
+
+  /* ─── Delete handlers ─── */
+  const openDelete = (branch) => {
+    setDeleteTarget(branch);
+    setDeleteOpen(true);
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await deleteBranch(deleteTarget.id);
+      setDeleteOpen(false);
+      fetchBranches();
+    } catch {
+      // silently close; optionally show toast
+      setDeleteOpen(false);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  /* ─── Table columns ─── */
   const columns = [
     {
       key: "name",
       label: "Branch Name",
       render: (row) => (
-        <div className="flex items-center gap-2">
-          <Building2 size={14} className="text-[var(--color-primary)]" />
-          <span className="font-medium text-[var(--color-text-primary)]">
-            {row.name}
-          </span>
+        <div className="flex flex-col">
+          {/* Desktop: single row with icon */}
+          <div className="flex items-center gap-2">
+            <Building2
+              size={14}
+              className="text-[var(--color-primary)] shrink-0"
+            />
+            <span className="font-medium text-[var(--color-text-primary)]">
+              {row.name}
+            </span>
+          </div>
+          {/* Mobile only: location shown below name */}
+          <div className="flex items-center gap-1 mt-0.5 md:hidden">
+            <MapPin
+              size={12}
+              className="text-[var(--color-text-secondary)] shrink-0"
+            />
+            <span className="text-xs text-[var(--color-text-secondary)]">
+              {row.location}
+            </span>
+          </div>
         </div>
       ),
     },
     {
       key: "location",
       label: "Location",
+      // Hidden on mobile via th/td className — handled in Table via col.hideOnMobile
+      hideOnMobile: true,
       render: (row) => (
         <span className="text-[var(--color-text-secondary)]">
           {row.location}
@@ -79,16 +169,38 @@ export default function BranchList() {
       ),
     },
     {
-      key: "created_at",
-      label: "Created",
+      key: "actions",
+      label: "",
       render: (row) => (
-        <span className="text-[var(--color-text-secondary)]">
-          {new Date(row.created_at).toLocaleDateString("en-GB")}
-        </span>
+        <div className="flex items-center justify-end gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              openEdit(row);
+            }}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
+            title="Edit branch"
+          >
+            <Pencil size={15} />
+            <span className="hidden md:inline text-sm font-medium">Edit</span>
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              openDelete(row);
+            }}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:text-[var(--color-danger)] transition-colors"
+            title="Delete branch"
+          >
+            <Trash2 size={15} />
+            <span className="hidden md:inline text-sm font-medium">Delete</span>
+          </button>
+        </div>
       ),
     },
   ];
 
+  /* ─── Render ─── */
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
@@ -104,7 +216,7 @@ export default function BranchList() {
             Manage all gym branches
           </p>
         </div>
-        <Button onClick={() => setIsOpen(true)}>+ New Branch</Button>
+        <Button onClick={openCreate}>+ New Branch</Button>
       </div>
 
       {/* Table */}
@@ -118,48 +230,109 @@ export default function BranchList() {
         <Table columns={columns} data={branches} />
       )}
 
-      {/* Create Branch Modal */}
+      {/* ── Create Modal ── */}
       <Modal
-        isOpen={isOpen}
-        onClose={() => {
-          setIsOpen(false);
-          setError("");
-          setFormData({ name: "", location: "" });
-        }}
+        isOpen={createOpen}
+        onClose={() => setCreateOpen(false)}
         title="Create New Branch"
       >
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleCreate} className="flex flex-col gap-4">
           <Input
             label="Branch Name"
             name="name"
             placeholder="e.g. Uttara North Branch"
-            value={formData.name}
-            onChange={handleChange}
+            value={createForm.name}
+            onChange={(e) =>
+              setCreateForm((p) => ({ ...p, name: e.target.value }))
+            }
             required
           />
           <Input
             label="Location"
             name="location"
             placeholder="e.g. Uttara Sector-14, Dhaka"
-            value={formData.location}
-            onChange={handleChange}
+            value={createForm.location}
+            onChange={(e) =>
+              setCreateForm((p) => ({ ...p, location: e.target.value }))
+            }
             required
           />
-
-          {error && (
-            <p className="text-xs md:text-sm text-[var(--color-danger)]">
-              {error}
-            </p>
+          {createError && (
+            <p className="text-xs text-[var(--color-danger)]">{createError}</p>
           )}
-
-          <Button type="submit" className="w-full mt-2" disabled={submitting}>
-            {submitting ? (
+          <Button type="submit" className="w-full mt-2" disabled={creating}>
+            {creating ? (
               <Spinner className="w-4 h-4 mx-auto" />
             ) : (
               "Create Branch"
             )}
           </Button>
         </form>
+      </Modal>
+
+      {/* ── Edit Modal ── */}
+      <Modal
+        isOpen={editOpen}
+        onClose={() => setEditOpen(false)}
+        title="Edit Branch"
+      >
+        <form onSubmit={handleEdit} className="flex flex-col gap-4">
+          <Input
+            label="Branch Name"
+            name="name"
+            placeholder="e.g. Uttara North Branch"
+            value={editForm.name}
+            onChange={(e) =>
+              setEditForm((p) => ({ ...p, name: e.target.value }))
+            }
+            required
+          />
+          <Input
+            label="Location"
+            name="location"
+            placeholder="e.g. Uttara Sector-14, Dhaka"
+            value={editForm.location}
+            onChange={(e) =>
+              setEditForm((p) => ({ ...p, location: e.target.value }))
+            }
+            required
+          />
+          {editError && (
+            <p className="text-xs text-[var(--color-danger)]">{editError}</p>
+          )}
+          <Button type="submit" className="w-full mt-2" disabled={editing}>
+            {editing ? <Spinner className="w-4 h-4 mx-auto" /> : "Save Changes"}
+          </Button>
+        </form>
+      </Modal>
+
+      {/* ── Delete Confirm Modal ── */}
+      <Modal
+        isOpen={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        title="Delete Branch"
+      >
+        <div className="flex flex-col gap-5">
+          <p className="text-sm text-[var(--color-text-secondary)]">
+            Are you sure you want to delete{" "}
+            <span className="font-semibold text-[var(--color-text-primary)]">
+              {deleteTarget?.name}
+            </span>
+            ? This action cannot be undone.
+          </p>
+          <div className="flex gap-3 justify-end">
+            <Button
+              variant="ghost"
+              onClick={() => setDeleteOpen(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleDelete} disabled={deleting}>
+              {deleting ? <Spinner className="w-4 h-4 mx-auto" /> : "Delete"}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

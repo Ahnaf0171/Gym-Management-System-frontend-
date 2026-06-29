@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { Table } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
@@ -82,60 +81,6 @@ export default function WorkoutPlans() {
     }
   };
 
-  const columns = [
-    {
-      key: "title",
-      label: "Title",
-      render: (row) => (
-        <span className="font-medium text-[var(--color-text-primary)]">
-          {row.title}
-        </span>
-      ),
-    },
-    {
-      key: "description",
-      label: "Description",
-      render: (row) => (
-        <span className="text-[var(--color-text-secondary)] line-clamp-1">
-          {row.description}
-        </span>
-      ),
-    },
-    {
-      key: "created_at",
-      label: "Created",
-      render: (row) => (
-        <span className="text-[var(--color-text-secondary)]">
-          {new Date(row.created_at).toLocaleDateString("en-GB")}
-        </span>
-      ),
-    },
-    ...(isTrainer
-      ? [
-          {
-            key: "actions",
-            label: "Actions",
-            render: (row) => (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => openModal("edit", row)}
-                  className="px-3 py-1 text-xs font-medium rounded-lg border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-all duration-200"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => openModal("delete", row)}
-                  className="px-3 py-1 text-xs font-medium rounded-lg border border-[var(--color-danger)] text-[var(--color-danger)] hover:bg-[var(--color-danger)] hover:text-white transition-all duration-200"
-                >
-                  Delete
-                </button>
-              </div>
-            ),
-          },
-        ]
-      : []),
-  ];
-
   const renderModalContent = () => {
     if (modal.type === "delete") {
       return (
@@ -168,7 +113,7 @@ export default function WorkoutPlans() {
     }
 
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
         <Input
           label="Title"
           name="title"
@@ -179,8 +124,8 @@ export default function WorkoutPlans() {
           }
           required
         />
-        <div className="flex flex-col gap-1">
-          <label className="text-sm md:text-base font-medium text-[var(--color-text-primary)]">
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-[var(--color-text-primary)]">
             Description
           </label>
           <textarea
@@ -190,16 +135,12 @@ export default function WorkoutPlans() {
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, description: e.target.value }))
             }
-            rows={3}
+            rows={6}
             required
-            className="px-4 py-2 md:px-5 md:py-2.5 text-sm md:text-base border border-[var(--color-border)] rounded-xl bg-transparent text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)] transition-all duration-200 resize-none"
+            className="px-2 py-2 text-sm border border-[var(--color-border)] rounded-xl bg-transparent text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)] transition-all duration-200 resize-none"
           />
         </div>
-        {error && (
-          <p className="text-xs md:text-sm text-[var(--color-danger)]">
-            {error}
-          </p>
-        )}
+        {error && <p className="text-xs text-[var(--color-danger)]">{error}</p>}
         <Button
           onClick={handleSubmit}
           className="w-full mt-2"
@@ -218,11 +159,11 @@ export default function WorkoutPlans() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
           <h1
-            className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)]"
+            className="text-xl md:text-2xl font-bold text-[var(--color-text-primary)]"
             style={{ fontFamily: "var(--font-heading)" }}
           >
             Workout Plans
@@ -238,6 +179,7 @@ export default function WorkoutPlans() {
         )}
       </div>
 
+      {/* Content */}
       {loading ? (
         <div className="flex justify-center py-12">
           <Spinner className="w-8 h-8" />
@@ -245,7 +187,104 @@ export default function WorkoutPlans() {
       ) : plans.length === 0 ? (
         <EmptyState message="No workout plans found" />
       ) : (
-        <Table columns={columns} data={plans} />
+        <>
+          {/* ── Desktop table (lg+) ── */}
+          <div className="hidden lg:block rounded-2xl border border-[var(--color-border)] overflow-hidden">
+            <table className="w-full table-fixed text-sm">
+              <thead>
+                <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
+                  <th className="text-left px-2 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] w-[26%]">
+                    Title
+                  </th>
+                  <th className="text-left px-2 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] w-[52%]">
+                    Description
+                  </th>
+                  <th className="text-left px-2 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] w-[10%]">
+                    Created
+                  </th>
+                  {isTrainer && <th className="w-[12%]" />}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-border)]">
+                {plans.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="bg-[var(--color-surface-1)] hover:bg-[var(--color-surface-2)] transition-colors"
+                  >
+                    <td className="px-4 py-3">
+                      <span className="font-medium text-[var(--color-text-primary)] break-words">
+                        {row.title}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-sm text-[var(--color-text-secondary)] break-words">
+                        {row.description}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs text-[var(--color-text-secondary)] whitespace-nowrap">
+                        {new Date(row.created_at).toLocaleDateString("en-GB")}
+                      </span>
+                    </td>
+                    {isTrainer && (
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => openModal("edit", row)}
+                            className="px-2.5 py-1 text-xs font-medium rounded-lg border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-all duration-200"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => openModal("delete", row)}
+                            className="px-2.5 py-1 text-xs font-medium rounded-lg border border-[var(--color-danger)] text-[var(--color-danger)] hover:bg-[var(--color-danger)] hover:text-white transition-all duration-200"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="lg:hidden flex flex-col gap-2">
+            {plans.map((row) => (
+              <div
+                key={row.id}
+                className="flex items-start gap-3 px-4 py-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)]"
+              >
+                <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                  <p className="text-sm font-medium text-[var(--color-text-primary)] break-words">
+                    {row.title}
+                  </p>
+                  <p className="text-xs text-[var(--color-text-secondary)] break-words">
+                    {row.description}
+                  </p>
+                </div>
+
+                {isTrainer && (
+                  <div className="flex flex-col gap-1.5 shrink-0 mt-0.5">
+                    <button
+                      onClick={() => openModal("edit", row)}
+                      className="px-2.5 py-1 text-xs font-medium rounded-lg border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-all duration-200"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => openModal("delete", row)}
+                      className="px-2.5 py-1 text-xs font-medium rounded-lg border border-[var(--color-danger)] text-[var(--color-danger)] hover:bg-[var(--color-danger)] hover:text-white transition-all duration-200"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       <Modal

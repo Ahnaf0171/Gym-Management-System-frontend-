@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/Input";
 import { Spinner } from "@/components/ui/Spinner";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { UserCreateForm } from "@/components/shared/UserCreateForm";
-import { getUsers, updateUser, deleteUser } from "@/services/userService";
-import { API_BASE_URL } from "@/utils/constants";
+import EditProfileModal from "@/components/shared/EditProfileModal";
+import { getUsers, deleteUser } from "@/services/userService";
 import { getRoleLabel } from "@/utils/roleUtils";
+import { Pencil, Trash2 } from "lucide-react";
 
 const ROLE_COLORS = {
   gym_manager: "var(--color-info)",
@@ -39,16 +40,7 @@ export function UserTable({
   const [searchInput, setSearchInput] = useState("");
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [editUser, setEditUser] = useState(null);
-  const [editEmail, setEditEmail] = useState("");
-  const [editUsername, setEditUsername] = useState("");
-  const [editGender, setEditGender] = useState("");
-  const [editAge, setEditAge] = useState("");
-  const [editMobileNumber, setEditMobileNumber] = useState("");
-  const [editProfilePicture, setEditProfilePicture] = useState(null);
-  const [editPreviewUrl, setEditPreviewUrl] = useState(null);
-  const [editLoading, setEditLoading] = useState(false);
-  const [editError, setEditError] = useState("");
+  const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -80,164 +72,28 @@ export function UserTable({
     setSearch(searchInput.trim());
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setEditProfilePicture(file);
-      setEditPreviewUrl(URL.createObjectURL(file));
-    }
-  };
-
-  const handleEdit = async (e) => {
-    e.preventDefault();
-    setEditLoading(true);
-    setEditError("");
-    try {
-      const formData = new FormData();
-      formData.append("email", editEmail);
-      formData.append("username", editUsername);
-      if (editGender) formData.append("gender", editGender);
-      if (editAge) formData.append("age", editAge);
-      formData.append("mobile_number", editMobileNumber);
-      if (editProfilePicture)
-        formData.append("profile_picture", editProfilePicture);
-
-      await updateUser(editUser.id, formData);
-      setEditUser(null);
-      fetchUsers();
-    } catch (err) {
-      const data = err.response?.data;
-      const firstError =
-        data?.email?.[0] ||
-        data?.username?.[0] ||
-        data?.mobile_number?.[0] ||
-        data?.non_field_errors?.[0] ||
-        "Something went wrong";
-      setEditError(firstError);
-    } finally {
-      setEditLoading(false);
-    }
-  };
-
   const handleDelete = async () => {
     setDeleteLoading(true);
     try {
       await deleteUser(deleteTarget.id);
       setDeleteTarget(null);
-      fetchUsers();
+      await fetchUsers();
     } catch {
+      // error handle
+    } finally {
       setDeleteLoading(false);
     }
   };
 
-  const columns = [
-    {
-      key: "email",
-      label: "Email",
-      render: (row) => (
-        <div className="flex items-center gap-2">
-          <div
-            className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-            style={{
-              backgroundColor: ROLE_COLORS[row.role] ?? "var(--color-primary)",
-            }}
-          >
-            {row.email?.[0]?.toUpperCase()}
-          </div>
-          <span className="font-medium text-[var(--color-text-primary)]">
-            {row.email}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: "mobile_number",
-      label: "Contact Number",
-      render: (row) => (
-        <span className="text-[var(--color-text-secondary)]">
-          {row.mobile_number ?? "—"}
-        </span>
-      ),
-    },
-    {
-      key: "role",
-      label: "Role",
-      render: (row) => (
-        <span
-          className="text-xs font-medium px-2.5 py-1 rounded-full"
-          style={{
-            color: ROLE_COLORS[row.role],
-            backgroundColor: `${ROLE_COLORS[row.role]}20`,
-          }}
-        >
-          {getRoleLabel(row.role)}
-        </span>
-      ),
-    },
-    {
-      key: "gym_branch_name",
-      label: "Branch",
-      render: (row) => (
-        <span className="text-[var(--color-text-secondary)]">
-          {row.gym_branch_name ?? "—"}
-        </span>
-      ),
-    },
-    {
-      key: "created_at",
-      label: "Joined",
-      render: (row) => (
-        <span className="text-[var(--color-text-secondary)]">
-          {new Date(row.created_at).toLocaleDateString("en-GB")}
-        </span>
-      ),
-    },
-    {
-      key: "actions",
-      label: "Actions",
-      render: (row) => (
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() => {
-              setEditUser(row);
-              setEditEmail(row.email);
-              setEditUsername(row.username ?? "");
-              setEditGender(row.gender ?? "");
-              setEditAge(row.age ?? "");
-              setEditMobileNumber(row.mobile_number ?? "");
-              setEditProfilePicture(null);
-              setEditPreviewUrl(
-                row.profile_picture
-                  ? `${API_BASE_URL}${row.profile_picture}`
-                  : null,
-              );
-              setEditError("");
-            }}
-            className="text-xs px-3 py-1.5"
-            style={{ backgroundColor: "var(--color-info)" }}
-          >
-            Edit
-          </Button>
-          <Button
-            onClick={() => setDeleteTarget(row)}
-            className="text-xs px-3 py-1.5"
-            style={{ backgroundColor: "var(--color-danger)" }}
-          >
-            Delete
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
   const activeLabel = TAB_LABELS[activeTab] ?? "";
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 mx-auto w-full">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1
-            className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)]"
+            className="text-xl md:text-2xl font-bold text-[var(--color-text-primary)]"
             style={{ fontFamily: "var(--font-heading)" }}
           >
             Users
@@ -255,12 +111,12 @@ export function UserTable({
 
       {/* Tabs */}
       {tabs.length > 1 && (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           {tabs.map((tab) => (
             <button
               key={tab}
               onClick={() => handleTabChange(tab)}
-              className={`px-4 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all duration-200 cursor-pointer
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 cursor-pointer
                 ${
                   activeTab === tab
                     ? "bg-[var(--color-primary)] text-white"
@@ -283,7 +139,7 @@ export function UserTable({
         <Button type="submit">Search</Button>
       </form>
 
-      {/* Table */}
+      {/* Table / Card list */}
       {loading ? (
         <div className="flex justify-center py-12">
           <Spinner className="w-8 h-8" />
@@ -291,7 +147,191 @@ export function UserTable({
       ) : users.length === 0 ? (
         <EmptyState message={`No ${activeLabel.toLowerCase()} found`} />
       ) : (
-        <Table columns={columns} data={users} />
+        <>
+          {/* ── Desktop table (lg+) ── */}
+          <div className="hidden lg:block w-full">
+            <div className="rounded-2xl border border-[var(--color-border)] overflow-hidden">
+              <table className="w-full table-fixed text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--color-text-secondary)] w-[30%]">
+                      User
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--color-text-secondary)] w-[18%]">
+                      Contact
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--color-text-secondary)] w-[16%]">
+                      Role
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--color-text-secondary)] w-[20%]">
+                      Branch
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--color-text-secondary)] w-[10%]">
+                      Joined
+                    </th>
+                    <th className="w-[6%]" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--color-border)]">
+                  {users.map((row) => (
+                    <tr
+                      key={row.id}
+                      className="bg-[var(--color-surface-1)] hover:bg-[var(--color-surface-2)] transition-colors"
+                    >
+                      {/* User — avatar + email + username stacked */}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                            style={{
+                              backgroundColor:
+                                ROLE_COLORS[row.role] ?? "var(--color-primary)",
+                            }}
+                          >
+                            {(row.username || row.email)?.[0]?.toUpperCase()}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-medium text-[var(--color-text-primary)] break-all leading-tight">
+                              {row.email}
+                            </span>
+                            {row.username && (
+                              <span className="text-[11px] text-[var(--color-text-secondary)] truncate">
+                                {row.username}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Contact */}
+                      <td className="px-4 py-3">
+                        <span className="text-xs text-[var(--color-text-secondary)]">
+                          {row.mobile_number ?? "—"}
+                        </span>
+                      </td>
+
+                      {/* Role badge */}
+                      <td className="px-4 py-3">
+                        <span
+                          className="text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap"
+                          style={{
+                            color: ROLE_COLORS[row.role],
+                            backgroundColor: `${ROLE_COLORS[row.role]}20`,
+                          }}
+                        >
+                          {getRoleLabel(row.role)}
+                        </span>
+                      </td>
+
+                      {/* Branch */}
+                      <td className="px-4 py-3">
+                        <span className="text-xs text-[var(--color-text-secondary)] break-words">
+                          {row.gym_branch_name ?? "—"}
+                        </span>
+                      </td>
+
+                      {/* Joined */}
+                      <td className="px-4 py-3">
+                        <span className="text-xs text-[var(--color-text-secondary)] whitespace-nowrap">
+                          {new Date(row.created_at).toLocaleDateString(
+                            "en-GB",
+                            {
+                              day: "2-digit",
+                              month: "short",
+                              year: "2-digit",
+                            },
+                          )}
+                        </span>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-2 py-3">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setEditTarget(row)}
+                            className="p-1 rounded-lg text-[var(--color-info)] hover:bg-[var(--color-surface-2)] transition-colors"
+                            aria-label="Edit user"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget(row)}
+                            className="p-1 rounded-lg text-[var(--color-danger)] hover:bg-[var(--color-surface-2)] transition-colors"
+                            aria-label="Delete user"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="lg:hidden flex flex-col gap-2">
+            {users.map((row) => (
+              <div
+                key={row.id}
+                className="flex items-start gap-3 px-4 py-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)]"
+              >
+                {/* Avatar — top aligned */}
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0 mt-0.5"
+                  style={{
+                    backgroundColor:
+                      ROLE_COLORS[row.role] ?? "var(--color-primary)",
+                  }}
+                >
+                  {(row.username || row.email)?.[0]?.toUpperCase()}
+                </div>
+
+                {/* Info — left aligned */}
+                <div className="flex-1 min-w-0 flex flex-col items-start gap-0.5">
+                  <p className="text-sm font-medium text-[var(--color-text-primary)] truncate w-full">
+                    {row.username || row.email}
+                  </p>
+                  <p className="text-xs text-[var(--color-text-secondary)] truncate w-full">
+                    {row.email}
+                  </p>
+                  <span
+                    className="text-[11px] font-medium py-0.5 rounded-full whitespace-nowrap mt-0.5"
+                    style={{
+                      color: ROLE_COLORS[row.role],
+                      backgroundColor: `${ROLE_COLORS[row.role]}20`,
+                    }}
+                  >
+                    {getRoleLabel(row.role)}
+                  </span>
+                  {row.gym_branch_name && (
+                    <span className="text-[11px] text-[var(--color-text-secondary)] truncate w-full">
+                      {row.gym_branch_name}
+                    </span>
+                  )}
+                </div>
+
+                {/* Actions — top aligned */}
+                <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                  <button
+                    onClick={() => setEditTarget(row)}
+                    className="p-1.5 rounded-lg text-[var(--color-info)] hover:bg-[var(--color-surface-2)] transition-colors"
+                    aria-label="Edit user"
+                  >
+                    <Pencil size={15} />
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(row)}
+                    className="p-1.5 rounded-lg text-[var(--color-danger)] hover:bg-[var(--color-surface-2)] transition-colors"
+                    aria-label="Delete user"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Create Modal */}
@@ -308,91 +348,17 @@ export function UserTable({
         />
       </Modal>
 
-      {/* Edit Modal */}
-      <Modal
-        isOpen={!!editUser}
-        onClose={() => setEditUser(null)}
-        title="Edit User"
-      >
-        <form onSubmit={handleEdit} className="flex flex-col gap-4">
-          {editPreviewUrl && (
-            <img
-              src={editPreviewUrl}
-              alt="Preview"
-              className="w-16 h-16 rounded-full object-cover mx-auto border border-[var(--color-border)]"
-            />
-          )}
-
-          <Input
-            label="Username"
-            type="text"
-            value={editUsername}
-            onChange={(e) => setEditUsername(e.target.value)}
-          />
-
-          <Input
-            label="Email"
-            type="email"
-            value={editEmail}
-            onChange={(e) => setEditEmail(e.target.value)}
-            required
-          />
-
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-[var(--color-text-primary)]">
-              Gender
-            </label>
-            <select
-              value={editGender}
-              onChange={(e) => setEditGender(e.target.value)}
-              className="px-4 py-2 text-sm border border-[var(--color-border)] rounded-xl bg-[var(--color-surface-2)] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)] transition-all duration-200"
-            >
-              <option value="">Select gender</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
-          </div>
-
-          <Input
-            label="Age"
-            type="number"
-            value={editAge}
-            onChange={(e) => setEditAge(e.target.value)}
-            min="1"
-          />
-
-          <Input
-            label="Mobile Number"
-            type="tel"
-            value={editMobileNumber}
-            onChange={(e) => setEditMobileNumber(e.target.value)}
-            required
-          />
-
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-[var(--color-text-primary)]">
-              Profile Picture
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="text-sm text-[var(--color-text-primary)]"
-            />
-          </div>
-
-          {editError && (
-            <p className="text-xs text-[var(--color-danger)]">{editError}</p>
-          )}
-          <Button type="submit" className="w-full" disabled={editLoading}>
-            {editLoading ? (
-              <Spinner className="w-4 h-4 mx-auto" />
-            ) : (
-              "Save Changes"
-            )}
-          </Button>
-        </form>
-      </Modal>
+      {/* Edit Modal — EditProfileModal reuse */}
+      {editTarget && (
+        <EditProfileModal
+          targetUser={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSaved={() => {
+            setEditTarget(null);
+            fetchUsers();
+          }}
+        />
+      )}
 
       {/* Delete Modal */}
       <Modal

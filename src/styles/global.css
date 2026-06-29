@@ -105,6 +105,7 @@ select {
   font-size: 1rem;
 }
 
+
 .container {
   width: 100%;
   max-width: var(--container-max);

@@ -1,12 +1,109 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
-import { createUser } from "@/services/userService";
-import { getUsers } from "@/services/userService";
+import { createUser, getUsers } from "@/services/userService";
 import { ROLES } from "@/utils/constants";
 import useRole from "@/hooks/useRole";
 import { getBranches } from "@/services/branchService";
+import { ChevronDown } from "lucide-react";
+
+function CustomSelect({ value, onChange, options, placeholder = "Select" }) {
+  const [open, setOpen] = useState(false);
+  const [openUp, setOpenUp] = useState(false);
+  const ref = useRef(null);
+  const triggerRef = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+    };
+  }, []);
+
+  const handleOpen = () => {
+    if (!open && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const estimatedHeight = Math.min(options.length + 1, 5) * 36;
+      setOpenUp(spaceBelow < estimatedHeight + 8);
+    }
+    setOpen((p) => !p);
+  };
+
+  const selected = options.find((o) => String(o.value) === String(value));
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={handleOpen}
+        className="w-full flex items-center justify-between gap-2 px-4 py-2 text-sm border border-[var(--color-border)] rounded-xl bg-[var(--color-surface-2)] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)] transition-all duration-200 cursor-pointer"
+      >
+        <span
+          className={
+            selected
+              ? "text-[var(--color-text-primary)]"
+              : "text-[var(--color-text-secondary)]"
+          }
+        >
+          {selected ? selected.label : placeholder}
+        </span>
+        <ChevronDown
+          size={14}
+          className={`shrink-0 text-[var(--color-text-secondary)] transition-transform duration-150 mr-1 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <ul
+          className={[
+            "absolute left-0 right-0 z-50 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] shadow-lg overflow-y-auto max-h-48",
+            openUp ? "bottom-full mb-1" : "top-full mt-1",
+          ].join(" ")}
+        >
+          <li>
+            <button
+              type="button"
+              onClick={() => {
+                onChange("");
+                setOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] transition-colors"
+            >
+              {placeholder}
+            </button>
+          </li>
+          {options.map((opt) => (
+            <li key={opt.value}>
+              <button
+                type="button"
+                onClick={() => {
+                  onChange(String(opt.value));
+                  setOpen(false);
+                }}
+                className={
+                  "w-full text-left px-4 py-2 text-sm transition-colors duration-100 " +
+                  (String(opt.value) === String(value)
+                    ? "bg-[var(--color-primary)] text-white"
+                    : "text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)]")
+                }
+              >
+                {opt.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export function UserCreateForm({ onSuccess, className = "" }) {
   const { isAdmin } = useRole();
@@ -44,30 +141,20 @@ export function UserCreateForm({ onSuccess, className = "" }) {
     }
   }, [formData.role]);
 
-  const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
-      let payload = {
+      const payload = {
         email: formData.email,
         password: formData.password,
         role: formData.role,
         mobile_number: formData.mobile_number,
       };
-
-      if (isAdmin) {
-        payload.gym_branch = formData.gym_branch;
-      }
-
-      if (formData.role === ROLES.MEMBER && formData.trainer) {
+      if (isAdmin) payload.gym_branch = formData.gym_branch;
+      if (formData.role === ROLES.MEMBER && formData.trainer)
         payload.trainer = formData.trainer;
-      }
 
       await createUser(payload);
       onSuccess?.();
@@ -81,17 +168,13 @@ export function UserCreateForm({ onSuccess, className = "" }) {
       });
     } catch (err) {
       const data = err.response?.data;
-      if (data?.role) {
-        setError(data.role[0]);
-      } else if (data?.email) {
-        setError(data.email[0]);
-      } else if (data?.mobile_number) {
-        setError(data.mobile_number[0]);
-      } else if (data?.message) {
-        setError(data.message);
-      } else {
-        setError("Something went wrong");
-      }
+      setError(
+        data?.role?.[0] ||
+          data?.email?.[0] ||
+          data?.mobile_number?.[0] ||
+          data?.message ||
+          "Something went wrong",
+      );
     } finally {
       setLoading(false);
     }
@@ -104,9 +187,6 @@ export function UserCreateForm({ onSuccess, className = "" }) {
         { value: ROLES.MEMBER, label: "Member" },
       ];
 
-  const selectClass =
-    "px-4 py-2 md:px-5 md:py-2.5 text-sm md:text-base border border-[var(--color-border)] rounded-xl bg-[var(--color-surface-2)] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)] transition-all duration-200";
-
   return (
     <form
       onSubmit={handleSubmit}
@@ -118,7 +198,7 @@ export function UserCreateForm({ onSuccess, className = "" }) {
         type="email"
         placeholder="Enter email"
         value={formData.email}
-        onChange={handleChange}
+        onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
         required
       />
       <Input
@@ -127,7 +207,9 @@ export function UserCreateForm({ onSuccess, className = "" }) {
         type="tel"
         placeholder="Enter mobile number"
         value={formData.mobile_number}
-        onChange={handleChange}
+        onChange={(e) =>
+          setFormData((p) => ({ ...p, mobile_number: e.target.value }))
+        }
         required
       />
       <Input
@@ -136,90 +218,62 @@ export function UserCreateForm({ onSuccess, className = "" }) {
         type="password"
         placeholder="Enter password"
         value={formData.password}
-        onChange={handleChange}
+        onChange={(e) =>
+          setFormData((p) => ({ ...p, password: e.target.value }))
+        }
         required
       />
 
-      {isAdmin ? (
-        <div className="flex flex-col gap-1">
-          <label className="text-sm md:text-base font-medium text-[var(--color-text-primary)]">
-            Role
-          </label>
-          <div className={`${selectClass} opacity-70 cursor-not-allowed`}>
+      {/* Role */}
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium text-[var(--color-text-primary)]">
+          Role
+        </label>
+        {isAdmin ? (
+          <div className="px-4 py-2 text-sm border border-[var(--color-border)] rounded-xl bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] opacity-70 cursor-not-allowed">
             Gym Manager
           </div>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-1">
-          <label className="text-sm md:text-base font-medium text-[var(--color-text-primary)]">
-            Role
-          </label>
-          <select
-            name="role"
+        ) : (
+          <CustomSelect
             value={formData.role}
-            onChange={handleChange}
-            required
-            className={selectClass}
-          >
-            <option value="">Select role</option>
-            {roleOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+            onChange={(val) => setFormData((p) => ({ ...p, role: val }))}
+            options={roleOptions}
+            placeholder="Select role"
+          />
+        )}
+      </div>
 
-      {/* Admin → Branch dropdown */}
+      {/* Admin → Branch */}
       {isAdmin && (
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-[var(--color-text-primary)]">
             Branch
           </label>
-          <select
-            name="gym_branch"
+          <CustomSelect
             value={formData.gym_branch}
-            onChange={handleChange}
-            required
-            className={selectClass}
-          >
-            <option value="">Select branch</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setFormData((p) => ({ ...p, gym_branch: val }))}
+            options={branches.map((b) => ({ value: b.id, label: b.name }))}
+            placeholder="Select branch"
+          />
         </div>
       )}
 
-      {/* Member → Trainer dropdown */}
+      {/* Member → Trainer */}
       {formData.role === ROLES.MEMBER && (
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-[var(--color-text-primary)]">
             Assign Trainer
           </label>
-          <select
-            name="trainer"
+          <CustomSelect
             value={formData.trainer}
-            onChange={handleChange}
-            required
-            className={selectClass}
-          >
-            <option value="">Select trainer</option>
-            {trainers.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.email}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setFormData((p) => ({ ...p, trainer: val }))}
+            options={trainers.map((t) => ({ value: t.id, label: t.email }))}
+            placeholder="Select trainer"
+          />
         </div>
       )}
 
-      {error && (
-        <p className="text-xs md:text-sm text-[var(--color-danger)]">{error}</p>
-      )}
+      {error && <p className="text-xs text-[var(--color-danger)]">{error}</p>}
 
       <Button type="submit" className="w-full mt-2" disabled={loading}>
         {loading ? <Spinner className="w-4 h-4 mx-auto" /> : "Create User"}

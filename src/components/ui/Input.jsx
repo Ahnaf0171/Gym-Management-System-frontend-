@@ -10,7 +10,8 @@ export function Input({ label, id, className = "", ...rest }) {
         </label>
       )}
       <input
-        className={`px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-base border-2 border-gray-300 rounded-xl outline-none focus:border-blue-600 transition-all duration-200 ${className}`}
+        id={id}
+        className={`px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-base border border-gray-100 rounded-full ${className}`}
         {...rest}
       />
     </div>

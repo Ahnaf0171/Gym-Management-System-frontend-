@@ -7,7 +7,8 @@ export function Table({ columns, data, onRowClick, className = "" }) {
             {columns.map((col) => (
               <th
                 key={col.key}
-                className="px-4 py-3 text-left text-xs md:text-sm font-semibold text-[var(--color-text-secondary)] whitespace-nowrap"
+                className={`px-4 py-3 text-left text-xs md:text-sm font-semibold text-[var(--color-text-secondary)] whitespace-nowrap
+                  ${col.hideOnMobile ? "hidden md:table-cell" : ""}`}
               >
                 {col.label}
               </th>
@@ -30,12 +31,15 @@ export function Table({ columns, data, onRowClick, className = "" }) {
               <tr
                 key={row.id ?? rowIndex}
                 onClick={() => onRowClick?.(row)}
-                className={`border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)] transition-colors duration-150 ${onRowClick ? "cursor-pointer" : ""}`}
+                className={`border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)] transition-colors duration-150 ${
+                  onRowClick ? "cursor-pointer" : ""
+                }`}
               >
                 {columns.map((col) => (
                   <td
                     key={col.key}
-                    className="px-4 py-3 text-[var(--color-text-primary)] whitespace-nowrap"
+                    className={`px-4 py-3 text-[var(--color-text-primary)] whitespace-nowrap
+                      ${col.hideOnMobile ? "hidden md:table-cell" : ""}`}
                   >
                     {col.render ? col.render(row) : row[col.key]}
                   </td>
