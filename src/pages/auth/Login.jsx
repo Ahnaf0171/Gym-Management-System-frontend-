@@ -22,22 +22,39 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    if (formData.email.length > 30) {
+      return setError("Email must be under 30 characters.");
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      return setError("Please enter a correct email.");
+    }
+
     setLoading(true);
     try {
       await login(formData.email, formData.password);
     } catch (err) {
-      setError(
+      const msg = (
         err.response?.data?.detail ||
-          err.response?.data?.message ||
-          "Invalid email or password",
-      );
+        err.response?.data?.message ||
+        ""
+      ).toLowerCase();
+
+      if (msg.includes("password")) setError("Incorrect password.");
+      else if (
+        msg.includes("email") ||
+        msg.includes("user") ||
+        err.response?.status === 404
+      )
+        setError("No account found with this email.");
+      else setError(msg || "Invalid email or password.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)] px-4">
+    <div className="min-h-screen flex items-start sm:items-center justify-center bg-[var(--color-bg)] px-4 pt-[50px] sm:pt-0">
       <div className="w-full max-w-md relative">
         <button
           type="button"
@@ -64,7 +81,11 @@ export default function Login() {
         </div>
 
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 md:p-8">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form
+            onSubmit={handleSubmit}
+            noValidate
+            className="flex flex-col gap-4"
+          >
             <Input
               label="Email"
               name="email"
@@ -94,17 +115,17 @@ export default function Login() {
                 className="absolute right-3 bottom-2.5 text-gray-400 hover:text-gray-600 transition-colors"
               >
                 {showPassword ? (
-                  <EyeOff className="w-5 h-5" />
+                  <EyeOff className="w-6 h-6" />
                 ) : (
-                  <Eye className="w-5 h-5" />
+                  <Eye className="w-6 h-6" />
                 )}
               </button>
             </div>
 
             {error && (
-              <p className="text-xs md:text-sm text-[var(--color-danger)]">
+              <div className="text-xs md:text-sm text-[var(--color-danger)]">
                 {error}
-              </p>
+              </div>
             )}
 
             <Button type="submit" className="w-full mt-2" disabled={loading}>

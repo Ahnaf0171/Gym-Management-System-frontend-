@@ -6,7 +6,7 @@ import { createUser, getUsers } from "@/services/userService";
 import { ROLES } from "@/utils/constants";
 import useRole from "@/hooks/useRole";
 import { getBranches } from "@/services/branchService";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Eye, EyeOff } from "lucide-react";
 
 const DROPDOWN_MARGIN = 8; // breathing room from screen/modal edge
 const DROPDOWN_MAX_CAP = 240; // never grow taller than this even if space allows
@@ -41,10 +41,11 @@ function CustomSelect({ value, onChange, options, placeholder = "Select" }) {
       const spaceBelow = window.innerHeight - rect.bottom - DROPDOWN_MARGIN;
       const spaceAbove = rect.top - DROPDOWN_MARGIN;
 
-      // Pick whichever side actually has more room, then clamp the
-      // dropdown height to whatever that side can really offer —
-      // this is what stops it from ever spilling outside the modal.
-      const shouldOpenUp = spaceBelow < 160 && spaceAbove > spaceBelow;
+      // Always open toward whichever side actually has more room —
+      // same rule on every screen size, no magic thresholds. Then clamp
+      // the dropdown height to whatever that side can really offer,
+      // which is what stops it from ever spilling outside the modal.
+      const shouldOpenUp = spaceAbove >= spaceBelow;
       setOpenUp(shouldOpenUp);
       const available = shouldOpenUp ? spaceAbove : spaceBelow;
       setMaxHeight(Math.max(120, Math.min(available, DROPDOWN_MAX_CAP)));
@@ -147,6 +148,7 @@ export function UserCreateForm({ onSuccess, className = "" }) {
   const [trainers, setTrainers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (isAdmin) {
@@ -238,17 +240,32 @@ export function UserCreateForm({ onSuccess, className = "" }) {
         }
         required
       />
-      <Input
-        label="Password"
-        name="password"
-        type="password"
-        placeholder="Enter password"
-        value={formData.password}
-        onChange={(e) =>
-          setFormData((p) => ({ ...p, password: e.target.value }))
-        }
-        required
-      />
+      <div className="relative">
+        <Input
+          label="Password"
+          name="password"
+          type={showPassword ? "text" : "password"}
+          placeholder="Enter password"
+          value={formData.password}
+          onChange={(e) =>
+            setFormData((p) => ({ ...p, password: e.target.value }))
+          }
+          required
+          className="pr-10"
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword((prev) => !prev)}
+          aria-label={showPassword ? "Hide password" : "Show password"}
+          className="absolute right-3 bottom-2.5 md:bottom-3 text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          {showPassword ? (
+            <EyeOff className="w-6 h-6" />
+          ) : (
+            <Eye className="w-6 h-6" />
+          )}
+        </button>
+      </div>
 
       {/* Role */}
       <div className="flex flex-col gap-1">

@@ -11,7 +11,7 @@ export function Input({ label, id, className = "", ...rest }) {
       )}
       <input
         id={id}
-        className={`px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-base border border-gray-100 rounded-full ${className}`}
+        className={`px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-base border-2 border-gray-100 rounded-full outline-none focus:border-gray-400 transition-colors duration-150 ${className}`}
         {...rest}
       />
     </div>

@@ -5,6 +5,17 @@ import { Spinner } from "@/components/ui/Spinner";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { getAttendance } from "@/services/attendanceService";
 
+function formatDateTime(value) {
+  if (!value) return "—";
+  return new Date(value).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function AttendanceTable() {
   const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,15 +61,7 @@ export function AttendanceTable() {
       label: "Check In",
       render: (row) => (
         <span className="text-[var(--color-text-secondary)]">
-          {row.check_in
-            ? new Date(row.check_in).toLocaleString("en-GB", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : "—"}
+          {formatDateTime(row.check_in)}
         </span>
       ),
     },
@@ -67,15 +70,7 @@ export function AttendanceTable() {
       label: "Check Out",
       render: (row) => (
         <span className="text-[var(--color-text-secondary)]">
-          {row.check_out
-            ? new Date(row.check_out).toLocaleString("en-GB", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : "—"}
+          {formatDateTime(row.check_out)}
         </span>
       ),
     },
@@ -121,7 +116,71 @@ export function AttendanceTable() {
       ) : attendance.length === 0 ? (
         <EmptyState message="No attendance records found" />
       ) : (
-        <Table columns={columns} data={attendance} />
+        <>
+          {/* Desktop / tablet: normal table, hidden on mobile */}
+          <div className="hidden sm:block">
+            <Table columns={columns} data={attendance} />
+          </div>
+
+          {/* Mobile: stacked card per row, no side scroll, text wraps */}
+          <div className="flex flex-col gap-3 sm:hidden">
+            {attendance.map((row, i) => (
+              <div
+                key={row.id ?? i}
+                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 flex flex-col gap-3 w-full min-w-0"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                    style={{ backgroundColor: "var(--color-primary)" }}
+                  >
+                    {row.member_email?.[0]?.toUpperCase() ?? "?"}
+                  </div>
+                  <span className="font-medium text-[var(--color-text-primary)] break-words min-w-0">
+                    {row.member_email ?? `Member #${row.member}`}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[var(--color-text-secondary)]">
+                    Check In
+                  </span>
+                  <span className="text-[var(--color-text-primary)] text-right break-words">
+                    {formatDateTime(row.check_in)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[var(--color-text-secondary)]">
+                    Check Out
+                  </span>
+                  <span className="text-[var(--color-text-primary)] text-right break-words">
+                    {formatDateTime(row.check_out)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[var(--color-text-secondary)]">
+                    Status
+                  </span>
+                  <span
+                    className="text-xs font-medium px-2.5 py-1 rounded-full"
+                    style={{
+                      color: row.check_out
+                        ? "var(--color-success)"
+                        : "var(--color-warning)",
+                      backgroundColor: row.check_out
+                        ? "var(--color-success)20"
+                        : "var(--color-warning)20",
+                    }}
+                  >
+                    {row.check_out ? "Checked Out" : "Present"}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

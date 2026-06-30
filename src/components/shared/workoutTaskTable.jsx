@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Table } from "@/components/ui/Table";
 import { Modal } from "@/components/ui/Modal";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { Input } from "@/components/ui/Input";
 import { Spinner } from "@/components/ui/Spinner";
 import { EmptyState } from "@/components/shared/EmptyState";
 import {
@@ -12,7 +11,6 @@ import {
 import { TASK_STATUS } from "@/utils/constants";
 import useRole from "@/hooks/useRole";
 
-// ── Constants ────────────────────────────────────────
 const STATUSES = [
   { key: TASK_STATUS.PENDING, label: "Pending" },
   { key: TASK_STATUS.IN_PROGRESS, label: "In Progress" },
@@ -44,6 +42,12 @@ export function WorkoutTaskTable({
     setError("");
   };
 
+  const selectTask = (row) => {
+    setError("");
+    setIsEditing(false);
+    setSelectedTask(row);
+  };
+
   const openEdit = () => {
     setEditData({
       member: selectedTask.member,
@@ -52,7 +56,6 @@ export function WorkoutTaskTable({
     setIsEditing(true);
   };
 
-  // ── Status update ────────────────────────────────
   const handleStatusChange = async (newStatus) => {
     if (newStatus === selectedTask.status) return;
     setUpdatingStatus(newStatus);
@@ -68,7 +71,6 @@ export function WorkoutTaskTable({
     }
   };
 
-  // ── Edit submit ──────────────────────────────────
   const handleEditSubmit = async () => {
     setEditSubmitting(true);
     setError("");
@@ -93,7 +95,6 @@ export function WorkoutTaskTable({
     }
   };
 
-  // ── Delete ───────────────────────────────────────
   const handleDelete = async () => {
     setDeleting(true);
     try {
@@ -107,7 +108,8 @@ export function WorkoutTaskTable({
     }
   };
 
-  // ── Table columns ────────────────────────────────
+  // Single source of truth for fields — used by BOTH the desktop table
+  // and the mobile card list below, so nothing is rendered twice.
   const columns = [
     {
       key: "workout_plan",
@@ -124,7 +126,7 @@ export function WorkoutTaskTable({
             key: "member",
             label: "Member",
             render: (row) => (
-              <span className="text-[var(--color-text-secondary)]">
+              <span className="text-[var(--color-text-secondary)] break-words">
                 {row.member_email ?? `Member #${row.member}`}
               </span>
             ),
@@ -151,184 +153,208 @@ export function WorkoutTaskTable({
 
   return (
     <div className={`flex flex-col gap-3 ${className}`}>
-      <Table
-        columns={columns}
-        data={tasks}
-        onRowClick={(row) => {
-          setError("");
-          setIsEditing(false);
-          setSelectedTask(row);
-        }}
-      />
+      {/* Desktop / tablet */}
+      <div className="hidden sm:block">
+        <Table columns={columns} data={tasks} onRowClick={selectTask} />
+      </div>
+
+      {/* Mobile: each field on its own line, reusing the same columns config */}
+      <div className="flex flex-col gap-3 sm:hidden">
+        {tasks.map((row) => (
+          <button
+            key={row.id}
+            type="button"
+            onClick={() => selectTask(row)}
+            className="text-left rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 flex flex-col gap-2 w-full"
+          >
+            {columns.map((col) => (
+              <div
+                key={col.key}
+                className="flex justify-between items-center gap-3 text-sm min-w-0"
+              >
+                <span className="text-[var(--color-text-secondary)] shrink-0">
+                  {col.label}
+                </span>
+                <span className="text-right min-w-0">{col.render(row)}</span>
+              </div>
+            ))}
+          </button>
+        ))}
+      </div>
 
       <Modal
         isOpen={!!selectedTask}
         onClose={closeModal}
         title={isEditing ? "Edit Task" : "Task Details"}
       >
-        {selectedTask && (
+        {selectedTask && !isEditing && (
           <div className="flex flex-col gap-5">
-            {/* ── Detail View ── */}
-            {!isEditing && (
-              <>
-                {/* Info */}
-                <div className="flex flex-col gap-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-[var(--color-text-secondary)]">
-                      Plan
-                    </span>
-                    <span className="font-medium text-[var(--color-text-primary)]">
-                      {selectedTask.workout_plan_title ??
-                        `Plan #${selectedTask.workout_plan}`}
-                    </span>
-                  </div>
-                  {isTrainer && (
-                    <div className="flex justify-between">
-                      <span className="text-[var(--color-text-secondary)]">
-                        Member
-                      </span>
-                      <span className="font-medium text-[var(--color-text-primary)]">
-                        {selectedTask.member_email ??
-                          `Member #${selectedTask.member}`}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-[var(--color-text-secondary)]">
-                      Due Date
-                    </span>
-                    <span className="font-medium text-[var(--color-text-primary)]">
-                      {selectedTask.due_date}
-                    </span>
-                  </div>
-                </div>
-
-                <hr className="border-[var(--color-border)]" />
-
-                {/* Status buttons */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-[var(--color-text-secondary)]">
-                    Status
+            <div className="flex flex-col gap-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-[var(--color-text-secondary)]">Plan</span>
+                <span className="font-medium text-[var(--color-text-primary)]">
+                  {selectedTask.workout_plan_title ??
+                    `Plan #${selectedTask.workout_plan}`}
+                </span>
+              </div>
+              {isTrainer && (
+                <div className="flex justify-between">
+                  <span className="text-[var(--color-text-secondary)]">
+                    Member
                   </span>
-                  <div className="flex gap-2">
-                    {STATUSES.map(({ key, label }) => {
-                      const isActive = selectedTask.status === key;
-                      const isLoading = updatingStatus === key;
-                      const canChange = isTrainer || isMember;
-                      return (
-                        <button
-                          key={key}
-                          onClick={() => canChange && handleStatusChange(key)}
-                          disabled={!canChange || !!updatingStatus}
-                          className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold border transition-all duration-200 disabled:opacity-50
-                            ${
-                              isActive
-                                ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)]"
-                                : "bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
-                            }`}
-                        >
-                          {isLoading ? (
-                            <Spinner className="w-3 h-3 mx-auto" />
-                          ) : (
-                            label
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <span className="font-medium text-[var(--color-text-primary)]">
+                    {selectedTask.member_email ??
+                      `Member #${selectedTask.member}`}
+                  </span>
                 </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-[var(--color-text-secondary)]">
+                  Due Date
+                </span>
+                <span className="font-medium text-[var(--color-text-primary)]">
+                  {selectedTask.due_date}
+                </span>
+              </div>
+            </div>
 
-                {error && (
-                  <p className="text-xs text-[var(--color-danger)]">{error}</p>
-                )}
+            <hr className="border-[var(--color-border)]" />
 
-                {/* Edit + Delete — Trainer only */}
-                {isTrainer && (
-                  <>
-                    <hr className="border-[var(--color-border)]" />
-                    <div className="flex gap-3">
-                      <button
-                        onClick={openEdit}
-                        className="flex-1 px-4 py-2 rounded-xl text-sm font-medium border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-all duration-200"
-                      >
-                        Edit Task
-                      </button>
-                      <button
-                        onClick={handleDelete}
-                        disabled={deleting}
-                        className="flex-1 px-4 py-2 rounded-xl text-sm font-medium border border-[var(--color-danger)] text-[var(--color-danger)] hover:bg-[var(--color-danger)] hover:text-white transition-all duration-200 disabled:opacity-50"
-                      >
-                        {deleting ? (
-                          <Spinner className="w-4 h-4 mx-auto" />
-                        ) : (
-                          "Delete Task"
-                        )}
-                      </button>
-                    </div>
-                  </>
-                )}
-              </>
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-[var(--color-text-secondary)]">
+                Status
+              </span>
+              <div className="flex gap-2">
+                {STATUSES.map(({ key, label }) => {
+                  const isActive = selectedTask.status === key;
+                  const isLoading = updatingStatus === key;
+                  const canChange = isTrainer || isMember;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => canChange && handleStatusChange(key)}
+                      disabled={!canChange || !!updatingStatus}
+                      className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold border transition-all duration-200 disabled:opacity-50 ${
+                        isActive
+                          ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)]"
+                          : "bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+                      }`}
+                    >
+                      {isLoading ? (
+                        <Spinner className="w-3 h-3 mx-auto" />
+                      ) : (
+                        label
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {error && (
+              <p className="text-xs text-[var(--color-danger)]">{error}</p>
             )}
 
-            {/* ── Edit View ── */}
-            {isEditing && (
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1">
-                  <label className="text-sm font-medium text-[var(--color-text-primary)]">
-                    Member
-                  </label>
-                  <select
-                    value={editData.member}
-                    onChange={(e) =>
-                      setEditData((p) => ({ ...p, member: e.target.value }))
-                    }
-                    className={selectClass}
-                  >
-                    {members.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.email}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <Input
-                  label="Due Date"
-                  type="date"
-                  value={editData.due_date}
-                  onChange={(e) =>
-                    setEditData((p) => ({ ...p, due_date: e.target.value }))
-                  }
-                />
-
-                {error && (
-                  <p className="text-xs text-[var(--color-danger)]">{error}</p>
-                )}
-
+            {isTrainer && (
+              <>
+                <hr className="border-[var(--color-border)]" />
                 <div className="flex gap-3">
                   <button
-                    onClick={() => {
-                      setIsEditing(false);
-                      setError("");
-                    }}
-                    className="flex-1 px-4 py-2 rounded-xl text-sm font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] transition-all duration-200"
+                    onClick={openEdit}
+                    className="flex-1 px-4 py-2 rounded-xl text-sm font-medium border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-all duration-200"
                   >
-                    Cancel
+                    Edit Task
                   </button>
                   <button
-                    onClick={handleEditSubmit}
-                    disabled={editSubmitting}
-                    className="flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-[var(--color-primary)] text-white hover:opacity-90 transition-all duration-200 disabled:opacity-50"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="flex-1 px-4 py-2 rounded-xl text-sm font-medium border border-[var(--color-danger)] text-[var(--color-danger)] hover:bg-[var(--color-danger)] hover:text-white transition-all duration-200 disabled:opacity-50"
                   >
-                    {editSubmitting ? (
+                    {deleting ? (
                       <Spinner className="w-4 h-4 mx-auto" />
                     ) : (
-                      "Save Changes"
+                      "Delete Task"
                     )}
                   </button>
                 </div>
-              </div>
+              </>
             )}
+          </div>
+        )}
+
+        {selectedTask && isEditing && (
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-[var(--color-text-primary)]">
+                Member
+              </label>
+              <select
+                value={editData.member}
+                onChange={(e) =>
+                  setEditData((p) => ({ ...p, member: e.target.value }))
+                }
+                className={selectClass}
+              >
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.email}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-[var(--color-text-primary)]">
+                Due Date
+              </label>
+              {/* Plain text input — no calendar popup, user types it directly */}
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="YYYY-MM-DD"
+                maxLength={10}
+                value={editData.due_date}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
+                  const formatted = [
+                    digits.slice(0, 4),
+                    digits.slice(4, 6),
+                    digits.slice(6, 8),
+                  ]
+                    .filter(Boolean)
+                    .join("-");
+                  setEditData((p) => ({ ...p, due_date: formatted }));
+                }}
+                className={selectClass}
+              />
+            </div>
+
+            {error && (
+              <p className="text-xs text-[var(--color-danger)]">{error}</p>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  setError("");
+                }}
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] transition-all duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEditSubmit}
+                disabled={editSubmitting}
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-[var(--color-primary)] text-white hover:opacity-90 transition-all duration-200 disabled:opacity-50"
+              >
+                {editSubmitting ? (
+                  <Spinner className="w-4 h-4 mx-auto" />
+                ) : (
+                  "Save Changes"
+                )}
+              </button>
+            </div>
           </div>
         )}
       </Modal>

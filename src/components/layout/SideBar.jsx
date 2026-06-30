@@ -24,7 +24,7 @@ export function Sidebar({ isOpen, onClose, className = "" }) {
           border-r border-[var(--color-border)]
           transition-transform duration-300
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0 md:static md:z-auto
+          md:translate-x-0
           ${className}
         `}
       >

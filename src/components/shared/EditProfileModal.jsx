@@ -243,9 +243,8 @@ export default function EditProfileModal({
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — no onClick here anymore, so clicking it no longer closes the modal */}
       <div
-        onClick={handleClose}
         className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
         style={{ opacity: visible ? 1 : 0 }}
         aria-hidden="true"

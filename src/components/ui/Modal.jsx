@@ -12,13 +12,9 @@ export function Modal({ isOpen, onClose, title, children, className = "" }) {
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/60 backdrop-blur-sm px-4 pt-[50px] sm:pt-4 overflow-y-auto">
       <div
         className={`w-full max-w-md rounded-2xl p-6 shadow-xl bg-[var(--color-surface-1)] ${className}`}
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
           {title && (

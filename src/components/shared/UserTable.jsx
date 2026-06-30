@@ -9,7 +9,7 @@ import { UserCreateForm } from "@/components/shared/UserCreateForm";
 import EditProfileModal from "@/components/shared/EditProfileModal";
 import { getUsers, deleteUser } from "@/services/userService";
 import { getRoleLabel } from "@/utils/roleUtils";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Search, X } from "lucide-react";
 
 const ROLE_COLORS = {
   gym_manager: "var(--color-info)",
@@ -72,6 +72,11 @@ export function UserTable({
     setSearch(searchInput.trim());
   };
 
+  const handleClearSearch = () => {
+    setSearchInput("");
+    setSearch("");
+  };
+
   const handleDelete = async () => {
     setDeleteLoading(true);
     try {
@@ -130,13 +135,38 @@ export function UserTable({
       )}
 
       {/* Search */}
-      <form onSubmit={handleSearch} className="flex gap-2 max-w-sm">
-        <Input
-          placeholder="Search by email..."
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-        />
-        <Button type="submit">Search</Button>
+      <form onSubmit={handleSearch} className="flex gap-2 w-full max-w-3xl">
+        <div className="relative flex-1">
+          <button
+            type="submit"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)] sm:hidden"
+            aria-label="Search"
+          >
+            <Search size={16} />
+          </button>
+
+          <Input
+            placeholder="Search by email..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className={`w-full pl-9 sm:pl-4 ${searchInput ? "pr-9" : ""}`}
+          />
+
+          {searchInput && (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]"
+              aria-label="Clear search"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+
+        <Button type="submit" className="hidden sm:inline-flex">
+          Search
+        </Button>
       </form>
 
       {/* Table / Card list */}

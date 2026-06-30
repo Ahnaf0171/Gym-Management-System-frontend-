@@ -105,7 +105,6 @@ select {
   font-size: 1rem;
 }
 
-
 .container {
   width: 100%;
   max-width: var(--container-max);
@@ -141,4 +140,21 @@ select {
   outline: 2px solid var(--color-primary);
   outline-offset: 3px;
   border-radius: var(--radius-sm);
+}
+
+/* input:invalid,
+textarea:invalid,
+select:invalid {
+  box-shadow: none;
+  outline: none;
+}
+
+input:-moz-ui-invalid {
+  box-shadow: none;
+} */
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
 }
