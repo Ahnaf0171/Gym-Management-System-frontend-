@@ -2,7 +2,14 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getDashboardStats } from "@/services/dashboardService";
 import { DashboardStats } from "@/components/shared/DashboardStats";
-import { ClipboardList, CheckSquare, Clock, CheckCircle } from "lucide-react";
+import {
+  ClipboardList,
+  CheckSquare,
+  Clock,
+  CheckCircle,
+  Users,
+} from "lucide-react";
+import { ROUTES } from "@/utils/constants";
 
 export default function TrainerDashboard() {
   const { user } = useAuth();
@@ -20,6 +27,7 @@ export default function TrainerDashboard() {
           pending_tasks: 0,
           in_progress_tasks: 0,
           completed_tasks: 0,
+          total_members: 0,
         });
       } finally {
         setLoading(false);
@@ -60,6 +68,14 @@ export default function TrainerDashboard() {
       icon: <CheckCircle size={22} />,
       color: "var(--color-success)",
       to: "/trainer/workout-tasks",
+    },
+    {
+      id: 5,
+      label: "Members",
+      value: stats?.total_members ?? 0,
+      icon: <Users size={22} />,
+      color: "var(--color-secondary, var(--color-primary))",
+      to: ROUTES.TRAINER_USERS,
     },
   ];
 

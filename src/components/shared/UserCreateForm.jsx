@@ -8,9 +8,13 @@ import useRole from "@/hooks/useRole";
 import { getBranches } from "@/services/branchService";
 import { ChevronDown } from "lucide-react";
 
+const DROPDOWN_MARGIN = 8; // breathing room from screen/modal edge
+const DROPDOWN_MAX_CAP = 240; // never grow taller than this even if space allows
+
 function CustomSelect({ value, onChange, options, placeholder = "Select" }) {
   const [open, setOpen] = useState(false);
   const [openUp, setOpenUp] = useState(false);
+  const [maxHeight, setMaxHeight] = useState(DROPDOWN_MAX_CAP);
   const ref = useRef(null);
   const triggerRef = useRef(null);
 
@@ -26,15 +30,36 @@ function CustomSelect({ value, onChange, options, placeholder = "Select" }) {
     };
   }, []);
 
-  const handleOpen = () => {
-    if (!open && triggerRef.current) {
+  // Recalculate position/height on open, and keep it correct if the
+  // modal scrolls or the viewport resizes (e.g. mobile keyboard opening).
+  useEffect(() => {
+    if (!open) return;
+
+    const recalc = () => {
+      if (!triggerRef.current) return;
       const rect = triggerRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const estimatedHeight = Math.min(options.length + 1, 5) * 36;
-      setOpenUp(spaceBelow < estimatedHeight + 8);
-    }
-    setOpen((p) => !p);
-  };
+      const spaceBelow = window.innerHeight - rect.bottom - DROPDOWN_MARGIN;
+      const spaceAbove = rect.top - DROPDOWN_MARGIN;
+
+      // Pick whichever side actually has more room, then clamp the
+      // dropdown height to whatever that side can really offer —
+      // this is what stops it from ever spilling outside the modal.
+      const shouldOpenUp = spaceBelow < 160 && spaceAbove > spaceBelow;
+      setOpenUp(shouldOpenUp);
+      const available = shouldOpenUp ? spaceAbove : spaceBelow;
+      setMaxHeight(Math.max(120, Math.min(available, DROPDOWN_MAX_CAP)));
+    };
+
+    recalc();
+    window.addEventListener("resize", recalc);
+    window.addEventListener("scroll", recalc, true);
+    return () => {
+      window.removeEventListener("resize", recalc);
+      window.removeEventListener("scroll", recalc, true);
+    };
+  }, [open]);
+
+  const handleOpen = () => setOpen((p) => !p);
 
   const selected = options.find((o) => String(o.value) === String(value));
 
@@ -63,8 +88,9 @@ function CustomSelect({ value, onChange, options, placeholder = "Select" }) {
 
       {open && (
         <ul
+          style={{ maxHeight: `${maxHeight}px` }}
           className={[
-            "absolute left-0 right-0 z-50 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] shadow-lg overflow-y-auto max-h-48",
+            "absolute left-0 right-0 z-50 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] shadow-lg overflow-y-auto",
             openUp ? "bottom-full mb-1" : "top-full mt-1",
           ].join(" ")}
         >

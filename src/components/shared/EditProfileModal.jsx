@@ -78,6 +78,66 @@ function GenderDropdown({ value, onChange, inputCls }) {
   );
 }
 
+/**
+ * Walks a DRF-style error response (which can mix strings, arrays, and
+ * nested objects) and flattens it into a single, readable message.
+ * This is what lets us surface things like "mobile_number: this number
+ * is already in use" instead of a generic "Something went wrong".
+ */
+function extractErrorMessage(data) {
+  if (!data) return null;
+
+  if (typeof data === "string") return data;
+
+  if (Array.isArray(data)) {
+    const msgs = data.map(extractErrorMessage).filter(Boolean);
+    return msgs.length ? msgs.join(" ") : null;
+  }
+
+  if (typeof data === "object") {
+    // Prefer a field-specific, human readable label when we recognize the key
+    const FIELD_LABELS = {
+      email: "Email",
+      username: "Username",
+      mobile_number: "Mobile number",
+      password: "Password",
+      gender: "Gender",
+      age: "Age",
+      profile_picture: "Profile picture",
+      non_field_errors: null, // no prefix for generic errors
+      detail: null,
+    };
+
+    const messages = [];
+    for (const [key, value] of Object.entries(data)) {
+      const inner = extractErrorMessage(value);
+      if (!inner) continue;
+      const label = Object.prototype.hasOwnProperty.call(FIELD_LABELS, key)
+        ? FIELD_LABELS[key]
+        : key.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+      messages.push(label ? `${label}: ${inner}` : inner);
+    }
+    return messages.length ? messages.join(" | ") : null;
+  }
+
+  return String(data);
+}
+
+const USERNAME_MAX_LENGTH = 20;
+// Only lowercase letters, digits, dot, underscore, hyphen — then @ — then domain.
+// Blocks uppercase letters and missing/invalid @domain.
+const EMAIL_REGEX = /^[a-z0-9._-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+
+function validateForm(formState) {
+  if (formState.username && formState.username.length > USERNAME_MAX_LENGTH) {
+    return `Username can be at most ${USERNAME_MAX_LENGTH} characters`;
+  }
+  if (formState.email && !EMAIL_REGEX.test(formState.email)) {
+    return "Please enter a valid email (lowercase only, must include @ and a domain)";
+  }
+  return null;
+}
+
 export default function EditProfileModal({
   onClose,
   onSaved,
@@ -136,13 +196,25 @@ export default function EditProfileModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const validationError = validateForm(formState);
+    if (validationError) {
+      setMessage({ text: validationError, error: true });
+      return;
+    }
+
     setLoading(true);
     setMessage({ text: "", error: false });
     try {
       const fd = new FormData();
-      fd.append("email", formState.email);
-      fd.append("username", formState.username);
-      fd.append("mobile_number", formState.mobileNumber);
+
+      // Only send fields that actually have a value — this stops the
+      // backend from rejecting the request just because username or
+      // mobile number were left blank.
+      if (formState.email) fd.append("email", formState.email);
+      if (formState.username) fd.append("username", formState.username);
+      if (formState.mobileNumber)
+        fd.append("mobile_number", formState.mobileNumber);
       if (formState.gender) fd.append("gender", formState.gender);
       if (formState.age) fd.append("age", formState.age);
       if (formState.password) fd.append("password", formState.password);
@@ -157,14 +229,9 @@ export default function EditProfileModal({
       handleClose();
     } catch (err) {
       const data = err.response?.data;
-      const firstError =
-        data?.email?.[0] ||
-        data?.username?.[0] ||
-        data?.mobile_number?.[0] ||
-        data?.password?.[0] ||
-        data?.non_field_errors?.[0] ||
-        "Something went wrong";
-      setMessage({ text: firstError, error: true });
+      const friendlyMessage =
+        extractErrorMessage(data) || "Something went wrong";
+      setMessage({ text: friendlyMessage, error: true });
     } finally {
       setLoading(false);
     }
@@ -227,8 +294,12 @@ export default function EditProfileModal({
                 type="text"
                 value={formState.username}
                 onChange={set("username")}
+                maxLength={20}
                 className={inputCls}
               />
+              <span className="text-[10px] text-[var(--color-text-secondary)] self-end">
+                {formState.username.length}/20
+              </span>
             </div>
 
             {/* Email */}
@@ -237,7 +308,12 @@ export default function EditProfileModal({
               <input
                 type="email"
                 value={formState.email}
-                onChange={set("email")}
+                onChange={(e) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    email: e.target.value.toLowerCase(),
+                  }))
+                }
                 required
                 className={inputCls}
               />
@@ -274,7 +350,6 @@ export default function EditProfileModal({
                 type="tel"
                 value={formState.mobileNumber}
                 onChange={set("mobileNumber")}
-                required
                 className={inputCls}
               />
             </div>

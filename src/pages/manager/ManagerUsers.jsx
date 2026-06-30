@@ -10,6 +10,7 @@ export default function ManagerUsers() {
     <UserTable
       tabs={[ROLES.TRAINER, ROLES.MEMBER]}
       canCreate={true}
+      canEdit={true}
       defaultTab={roleFromUrl}
     />
   );

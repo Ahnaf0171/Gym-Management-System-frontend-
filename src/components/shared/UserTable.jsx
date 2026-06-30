@@ -1,4 +1,3 @@
-// components/shared/UserTable.jsx
 import { useState, useEffect, useCallback } from "react";
 import { Table } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
@@ -27,6 +26,7 @@ const TAB_LABELS = {
 export function UserTable({
   tabs = [],
   canCreate = false,
+  canEdit = false,
   defaultTab = null,
   createTabs = null,
 }) {
@@ -169,7 +169,7 @@ export function UserTable({
                     <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--color-text-secondary)] w-[10%]">
                       Joined
                     </th>
-                    <th className="w-[6%]" />
+                    {canEdit && <th className="w-[6%]" />}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--color-border)]">
@@ -245,24 +245,26 @@ export function UserTable({
                       </td>
 
                       {/* Actions */}
-                      <td className="px-2 py-3">
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => setEditTarget(row)}
-                            className="p-1 rounded-lg text-[var(--color-info)] hover:bg-[var(--color-surface-2)] transition-colors"
-                            aria-label="Edit user"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            onClick={() => setDeleteTarget(row)}
-                            className="p-1 rounded-lg text-[var(--color-danger)] hover:bg-[var(--color-surface-2)] transition-colors"
-                            aria-label="Delete user"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
+                      {canEdit && (
+                        <td className="px-2 py-3">
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => setEditTarget(row)}
+                              className="p-1 rounded-lg text-[var(--color-info)] hover:bg-[var(--color-surface-2)] transition-colors"
+                              aria-label="Edit user"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget(row)}
+                              className="p-1 rounded-lg text-[var(--color-danger)] hover:bg-[var(--color-surface-2)] transition-colors"
+                              aria-label="Delete user"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -312,22 +314,24 @@ export function UserTable({
                 </div>
 
                 {/* Actions — top aligned */}
-                <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                  <button
-                    onClick={() => setEditTarget(row)}
-                    className="p-1.5 rounded-lg text-[var(--color-info)] hover:bg-[var(--color-surface-2)] transition-colors"
-                    aria-label="Edit user"
-                  >
-                    <Pencil size={15} />
-                  </button>
-                  <button
-                    onClick={() => setDeleteTarget(row)}
-                    className="p-1.5 rounded-lg text-[var(--color-danger)] hover:bg-[var(--color-surface-2)] transition-colors"
-                    aria-label="Delete user"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
+                {canEdit && (
+                  <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                    <button
+                      onClick={() => setEditTarget(row)}
+                      className="p-1.5 rounded-lg text-[var(--color-info)] hover:bg-[var(--color-surface-2)] transition-colors"
+                      aria-label="Edit user"
+                    >
+                      <Pencil size={15} />
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(row)}
+                      className="p-1.5 rounded-lg text-[var(--color-danger)] hover:bg-[var(--color-surface-2)] transition-colors"
+                      aria-label="Delete user"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

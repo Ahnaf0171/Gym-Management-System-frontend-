@@ -122,14 +122,17 @@ export default function Profile() {
 
       <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] divide-y divide-[var(--color-border)]">
         {infoItems.map(({ id, icon, label, value, color }) => (
-          <div key={id} className="flex items-center gap-3 px-6 py-4">
-            <span style={{ color: color ?? "var(--color-primary)" }}>
+          <div key={id} className="flex items-start gap-3 px-6 py-4">
+            <span
+              className="mt-0.5 shrink-0"
+              style={{ color: color ?? "var(--color-primary)" }}
+            >
               {icon}
             </span>
-            <span className="text-xs md:text-sm text-[var(--color-text-secondary)] w-20 shrink-0">
+            <span className="text-xs md:text-sm text-[var(--color-text-secondary)] w-20 shrink-0 mt-0.5">
               {label}
             </span>
-            <span className="text-xs md:text-sm font-medium text-[var(--color-text-primary)]">
+            <span className="text-xs md:text-sm font-medium text-[var(--color-text-primary)] flex-1 min-w-0 break-words">
               {value ?? "—"}
             </span>
           </div>
