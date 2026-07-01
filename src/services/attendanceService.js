@@ -16,3 +16,8 @@ export const checkOut = async (id) => {
   const response = await axiosInstance.patch(`/api/v1/attendance/${id}/`, {});
   return response.data;
 };
+
+export const deleteAttendance = async (id) => {
+  const response = await axiosInstance.delete(`/api/v1/attendance/${id}/`);
+  return response.data;
+};

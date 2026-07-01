@@ -3,7 +3,8 @@ import { useState, useEffect, useCallback } from "react";
 import { Table } from "@/components/ui/Table";
 import { Spinner } from "@/components/ui/Spinner";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { getAttendance } from "@/services/attendanceService";
+import { getAttendance, deleteAttendance } from "@/services/attendanceService";
+import { Trash2 } from "lucide-react";
 
 function formatDateTime(value) {
   if (!value) return "—";
@@ -20,6 +21,7 @@ export function AttendanceTable() {
   const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
+  const [deletingId, setDeletingId] = useState(null);
 
   const fetchAttendance = useCallback(async () => {
     setLoading(true);
@@ -37,6 +39,25 @@ export function AttendanceTable() {
   useEffect(() => {
     fetchAttendance();
   }, [fetchAttendance]);
+
+  const handleDelete = useCallback(async (id) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to remove this attendance record?",
+    );
+    if (!confirmed) return;
+
+    setDeletingId(id);
+    try {
+      await deleteAttendance(id);
+      setAttendance((prev) => prev.filter((row) => row.id !== id));
+      setTotal((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error("Failed to delete attendance record", err);
+      window.alert("Could not remove this record. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  }, []);
 
   const columns = [
     {
@@ -93,6 +114,26 @@ export function AttendanceTable() {
         </span>
       ),
     },
+    {
+      key: "actions",
+      label: "",
+      render: (row) => (
+        <button
+          type="button"
+          onClick={() => handleDelete(row.id)}
+          disabled={deletingId === row.id}
+          className="p-2 rounded-lg text-[var(--color-text-secondary)] hover:text-white hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label="Remove attendance record"
+          title="Remove record"
+        >
+          {deletingId === row.id ? (
+            <Spinner className="w-4 h-4" />
+          ) : (
+            <Trash2 className="w-4 h-4" />
+          )}
+        </button>
+      ),
+    },
   ];
 
   return (
@@ -129,16 +170,32 @@ export function AttendanceTable() {
                 key={row.id ?? i}
                 className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 flex flex-col gap-3 w-full min-w-0"
               >
-                <div className="flex items-center gap-2 min-w-0">
-                  <div
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                    style={{ backgroundColor: "var(--color-primary)" }}
-                  >
-                    {row.member_email?.[0]?.toUpperCase() ?? "?"}
+                <div className="flex items-center justify-between gap-2 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                      style={{ backgroundColor: "var(--color-primary)" }}
+                    >
+                      {row.member_email?.[0]?.toUpperCase() ?? "?"}
+                    </div>
+                    <span className="font-medium text-[var(--color-text-primary)] break-words min-w-0">
+                      {row.member_email ?? `Member #${row.member}`}
+                    </span>
                   </div>
-                  <span className="font-medium text-[var(--color-text-primary)] break-words min-w-0">
-                    {row.member_email ?? `Member #${row.member}`}
-                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(row.id)}
+                    disabled={deletingId === row.id}
+                    className="p-2 rounded-lg text-[var(--color-text-secondary)] hover:text-white hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                    aria-label="Remove attendance record"
+                  >
+                    {deletingId === row.id ? (
+                      <Spinner className="w-4 h-4" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </button>
                 </div>
 
                 <div className="flex justify-between items-center text-sm">
