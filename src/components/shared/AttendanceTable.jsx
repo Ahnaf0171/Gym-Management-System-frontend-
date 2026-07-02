@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Table } from "@/components/ui/Table";
 import { Spinner } from "@/components/ui/Spinner";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { Modal } from "@/components/ui/Modal";
 import { getAttendance, deleteAttendance } from "@/services/attendanceService";
 import { Trash2 } from "lucide-react";
 
@@ -22,6 +23,7 @@ export function AttendanceTable() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [deletingId, setDeletingId] = useState(null);
+  const [confirmId, setConfirmId] = useState(null);
 
   const fetchAttendance = useCallback(async () => {
     setLoading(true);
@@ -40,24 +42,20 @@ export function AttendanceTable() {
     fetchAttendance();
   }, [fetchAttendance]);
 
-  const handleDelete = useCallback(async (id) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to remove this attendance record?",
-    );
-    if (!confirmed) return;
-
-    setDeletingId(id);
+  const handleDelete = useCallback(async () => {
+    if (!confirmId) return;
+    setDeletingId(confirmId);
     try {
-      await deleteAttendance(id);
-      setAttendance((prev) => prev.filter((row) => row.id !== id));
+      await deleteAttendance(confirmId);
+      setAttendance((prev) => prev.filter((row) => row.id !== confirmId));
       setTotal((prev) => Math.max(0, prev - 1));
     } catch (err) {
       console.error("Failed to delete attendance record", err);
-      window.alert("Could not remove this record. Please try again.");
     } finally {
       setDeletingId(null);
+      setConfirmId(null);
     }
-  }, []);
+  }, [confirmId]);
 
   const columns = [
     {
@@ -120,7 +118,7 @@ export function AttendanceTable() {
       render: (row) => (
         <button
           type="button"
-          onClick={() => handleDelete(row.id)}
+          onClick={() => setConfirmId(row.id)}
           disabled={deletingId === row.id}
           className="p-2 rounded-lg text-[var(--color-text-secondary)] hover:text-white hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Remove attendance record"
@@ -185,7 +183,7 @@ export function AttendanceTable() {
 
                   <button
                     type="button"
-                    onClick={() => handleDelete(row.id)}
+                    onClick={() => setConfirmId(row.id)}
                     disabled={deletingId === row.id}
                     className="p-2 rounded-lg text-[var(--color-text-secondary)] hover:text-white hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                     aria-label="Remove attendance record"
@@ -239,6 +237,31 @@ export function AttendanceTable() {
           </div>
         </>
       )}
+
+      <Modal
+        isOpen={!!confirmId}
+        onClose={() => setConfirmId(null)}
+        title="Remove Attendance"
+      >
+        <p className="text-sm text-[var(--color-text-secondary)] mb-6">
+          Do you want to remove this attendance?
+        </p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => setConfirmId(null)}
+            className="px-4 py-2 rounded-lg text-sm border border-[var(--color-border)] text-[var(--color-text-primary)]"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={!!deletingId}
+            className="px-4 py-2 rounded-lg text-sm bg-red-500 text-white disabled:opacity-50"
+          >
+            {deletingId ? "Removing..." : "Remove"}
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

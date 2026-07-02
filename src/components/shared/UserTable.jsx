@@ -142,7 +142,7 @@ export function UserTable({
             className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)] sm:hidden"
             aria-label="Search"
           >
-            <Search size={16} />
+            <Search size={20} />
           </button>
 
           <Input
@@ -159,7 +159,7 @@ export function UserTable({
               className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]"
               aria-label="Clear search"
             >
-              <X size={16} />
+              <X size={20} />
             </button>
           )}
         </div>
