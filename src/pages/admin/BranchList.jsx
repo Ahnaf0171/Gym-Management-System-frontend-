@@ -36,6 +36,8 @@ export default function BranchList() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [dependencies, setDependencies] = useState(null);
 
   /* ─── Fetch ─── */
   const fetchBranches = useCallback(async () => {
@@ -110,18 +112,26 @@ export default function BranchList() {
   /* ─── Delete handlers ─── */
   const openDelete = (branch) => {
     setDeleteTarget(branch);
+    setDeleteError("");
+    setDependencies(null);
     setDeleteOpen(true);
   };
 
   const handleDelete = async () => {
     setDeleting(true);
+    setDeleteError("");
     try {
       await deleteBranch(deleteTarget.id);
       setDeleteOpen(false);
       fetchBranches();
-    } catch {
-      // silently close; optionally show toast
-      setDeleteOpen(false);
+    } catch (err) {
+      const data = err.response?.data;
+      if (data?.dependencies) {
+        setDependencies(data.dependencies);
+        setDeleteError(data.detail);
+      } else {
+        setDeleteError(data?.detail || "Something went wrong");
+      }
     } finally {
       setDeleting(false);
     }
@@ -178,22 +188,20 @@ export default function BranchList() {
               e.stopPropagation();
               openEdit(row);
             }}
-            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
+            className="p-2 rounded-lg text-[var(--color-info)] hover:bg-[var(--color-surface-2)] transition-colors"
             title="Edit branch"
           >
-            <Pencil size={15} />
-            <span className="hidden md:inline text-sm font-medium">Edit</span>
+            <Pencil size={20} />
           </button>
           <button
             onClick={(e) => {
               e.stopPropagation();
               openDelete(row);
             }}
-            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:text-[var(--color-danger)] transition-colors"
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[var(--color-danger)] hover:bg-[var(--color-surface-2)] transition-colors"
             title="Delete branch"
           >
-            <Trash2 size={15} />
-            <span className="hidden md:inline text-sm font-medium">Delete</span>
+            <Trash2 size={20} />
           </button>
         </div>
       ),
@@ -313,24 +321,62 @@ export default function BranchList() {
         title="Delete Branch"
       >
         <div className="flex flex-col gap-5">
-          <p className="text-sm text-[var(--color-text-secondary)]">
-            Are you sure you want to delete{" "}
-            <span className="font-semibold text-[var(--color-text-primary)]">
-              {deleteTarget?.name}
-            </span>
-            ? This action cannot be undone.
-          </p>
+          {!dependencies ? (
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-[var(--color-text-primary)]">
+                {deleteTarget?.name}
+              </span>
+              ? This action cannot be undone.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-[var(--color-danger)] font-medium">
+                {deleteError}
+              </p>
+              <ul className="text-sm text-[var(--color-text-secondary)] flex flex-col gap-1">
+                {dependencies.managers > 0 && (
+                  <li>• Managers: {dependencies.managers}</li>
+                )}
+                {dependencies.trainers > 0 && (
+                  <li>• Trainers: {dependencies.trainers}</li>
+                )}
+                {dependencies.members > 0 && (
+                  <li>• Members: {dependencies.members}</li>
+                )}
+                {dependencies.workout_plans > 0 && (
+                  <li>• Workout Plans: {dependencies.workout_plans}</li>
+                )}
+                {dependencies.attendance_records > 0 && (
+                  <li>
+                    • Attendance Records: {dependencies.attendance_records}
+                  </li>
+                )}
+              </ul>
+            </div>
+          )}
+
+          {deleteError && !dependencies && (
+            <p className="text-xs text-[var(--color-danger)]">{deleteError}</p>
+          )}
+
           <div className="flex gap-3 justify-end">
             <Button
               variant="ghost"
               onClick={() => setDeleteOpen(false)}
               disabled={deleting}
             >
-              Cancel
+              {dependencies ? "Close" : "Cancel"}
             </Button>
-            <Button variant="danger" onClick={handleDelete} disabled={deleting}>
-              {deleting ? <Spinner className="w-4 h-4 mx-auto" /> : "Delete"}
-            </Button>
+            {!dependencies && (
+              <Button
+                variant="danger"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? <Spinner className="w-4 h-4 mx-auto" /> : "Delete"}
+              </Button>
+            )}
           </div>
         </div>
       </Modal>

@@ -345,20 +345,20 @@ export function UserTable({
 
                 {/* Actions — top aligned */}
                 {canEdit && (
-                  <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                  <div className="flex items-center gap-1 shrink-0 mt-0.5 mr-1">
                     <button
                       onClick={() => setEditTarget(row)}
-                      className="p-1.5 rounded-lg text-[var(--color-info)] hover:bg-[var(--color-surface-2)] transition-colors"
+                      className="p-2 rounded-lg text-[var(--color-info)] hover:bg-[var(--color-surface-2)] transition-colors"
                       aria-label="Edit user"
                     >
-                      <Pencil size={15} />
+                      <Pencil size={20} />
                     </button>
                     <button
                       onClick={() => setDeleteTarget(row)}
-                      className="p-1.5 rounded-lg text-[var(--color-danger)] hover:bg-[var(--color-surface-2)] transition-colors"
+                      className="p-2 rounded-lg text-[var(--color-danger)] hover:bg-[var(--color-surface-2)] transition-colors"
                       aria-label="Delete user"
                     >
-                      <Trash2 size={15} />
+                      <Trash2 size={20} />
                     </button>
                   </div>
                 )}
